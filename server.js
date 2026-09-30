@@ -6,6 +6,10 @@ const PORT = 3000
 const app = express()
 const filePath = path.join(__dirname,"db.json")
 
+let cache = {
+    
+}
+
 async function readData() {
     try{
         let data = await fs.readFile(filePath,"utf-8")
@@ -27,16 +31,34 @@ app.get('/',(req,res)=>{
 })
 
 app.get('/products',async (req,res)=>{
-    let products = await readData()
-    res.json(products)
+    let key = req.url;
+    let value = cache[key]
+    try{
+        if (value){
+            return res.json(value)
+        }
+        let products = await delayReadData()
+        cache[key] = products
+        res.json(products)
+    }catch(err){
+        console.log(err)
+    }
 
 })
 
 app.get('/products/:id',async (req,res)=>{
+    let key = req.url;
+    let value = cache[key]
+
     try{
+        if (value){
+            return res.json(value)
+        }
         let id = Number(req.params.id)
         let products = await readData()
+        
         let data = products.find(x=>x.id === id)
+        cache[key] = products
         res.json(data)
     }catch(err){
         console.log(err)
@@ -46,3 +68,4 @@ app.get('/products/:id',async (req,res)=>{
 app.listen(PORT,()=>{
     console.log("listening...")
 })
+
